@@ -1,128 +1,268 @@
 // NOTE: Do NOT add setup() or draw() in this file
 // setup() and draw() live in main.js
-// This file only defines:
-// 1) drawGame() → what the game screen looks like
-// 2) input handlers → what happens when the player clicks or presses keys
-// 3) helper functions specific to this screen
 
-// ------------------------------
-// Button data
-// ------------------------------
-// This object stores all the information needed to draw
-// and interact with the button on the game screen.
-// Keeping this in one object makes it easier to move,
-// resize, or restyle the button later.
-const gameBtn = {
-  x: 400, // x position (centre of the button)
-  y: 550, // y position (centre of the button)
-  w: 260, // width
-  h: 90, // height
-  label: "PRESS HERE", // text shown on the button
-};
+// ------------------------------------------------------------
+// Scroll state
+// ------------------------------------------------------------
+let scrollY = 0;
+let maxScroll = 0;
 
-// ------------------------------
-// Main draw function for this screen
-// ------------------------------
-// drawGame() is called from main.js *only*
-// when currentScreen === "game"
-function drawGame() {
-  // Set background colour for the game screen
-  background(240, 230, 140);
+// ------------------------------------------------------------
+// Story state
+// ------------------------------------------------------------
+let storyBlocks = [];
+let choices = [];
 
-  // ---- Title and instructions text ----
-  fill(0); // black text
-  textSize(32);
-  textAlign(CENTER, CENTER);
-  text("Game Screen", width / 2, 160);
+// ------------------------------------------------------------
+// Initialize story ONCE when entering game
+// ------------------------------------------------------------
+function initGameStory() {
+  scrollY = 0;
+  storyBlocks = [];
+  choices = [];
 
-  textSize(18);
-  text(
-    "Click the button (or press ENTER) for a random result.",
-    width / 2,
-    210,
+  // --- INTRO ---
+  storyBlocks.push(`You are born...`);
+  storyBlocks.push(
+    `You are born into a ${selectedFamily.toUpperCase()} family.`,
+  );
+  storyBlocks.push(
+    `Your parents name you ${player.name}.`,
   );
 
-  // ---- Draw the button ----
-  // We pass the button object to a helper function
-  drawGameButton(gameBtn);
+  // --- FLAVOR BASED ON STATS ---
+  if (player.stats.appearance >= 6) {
+    storyBlocks.push(
+      `As you grow older, people often notice you. You attract attention without trying.`,
+    );
+  }
 
-  // ---- Cursor feedback ----
-  // If the mouse is over the button, show a hand cursor
-  // Otherwise, show the normal arrow cursor
-  cursor(isHover(gameBtn) ? HAND : ARROW);
+  if (player.stats.intelligence >= 6) {
+    storyBlocks.push(
+      `Teachers quickly realize you learn faster than most children your age.`,
+    );
+  }
+
+  if (player.stats.confidence <= 2) {
+    storyBlocks.push(
+      `You tend to stay quiet, observing others from a distance.`,
+    );
+  }
+
+  storyBlocks.push(`Time passes. A new chapter of life begins.`);
+
+  // --- FIRST MAJOR CHOICE ---
+  buildEducationChoices();
 }
 
-// ------------------------------
-// Button drawing helper
-// ------------------------------
-// This function is responsible *only* for drawing the button.
-// It does NOT handle clicks or game logic.
-function drawGameButton({ x, y, w, h, label }) {
+// ------------------------------------------------------------
+// Build education choices (STAT GATED)
+// ------------------------------------------------------------
+function buildEducationChoices() {
+  choices = [];
+
+  // University (INT gated)
+  choices.push({
+    label: "Apply to University",
+    requirements: { intelligence: 6 },
+    onSelect: () => {
+      storyBlocks.push(
+        `You are accepted into university. Late nights and ambition shape your future.`,
+      );
+      afterEducation();
+    },
+  });
+
+  // College (always allowed)
+  choices.push({
+    label: "Go to College",
+    requirements: {},
+    onSelect: () => {
+      storyBlocks.push(
+        `You choose college. Practical skills prepare you for the real world.`,
+      );
+      afterEducation();
+    },
+  });
+
+  // Work early (family-based flavor)
+  choices.push({
+    label: "Start Working Immediately",
+    requirements: {},
+    onSelect: () => {
+      storyBlocks.push(
+        `You enter the workforce early, learning life the hard way.`,
+      );
+      afterEducation();
+    },
+  });
+}
+
+// ------------------------------------------------------------
+// After education branch
+// ------------------------------------------------------------
+function afterEducation() {
+  choices = [];
+
+  if (player.stats.charisma >= 5) {
+    storyBlocks.push(
+      `People enjoy being around you. Opportunities come through connections.`,
+    );
+  }
+
+  if (player.stats.strength >= 6) {
+    storyBlocks.push(
+      `Physical work never scares you. Your body becomes your advantage.`,
+    );
+  }
+
+  choices.push({
+    label: "Pursue Career",
+    requirements: {},
+    onSelect: () => {
+      storyBlocks.push(`Your career begins...`);
+    },
+  });
+
+  choices.push({
+    label: "Take Risks",
+    requirements: { luck: 5 },
+    onSelect: () => {
+      storyBlocks.push(
+        `You gamble on uncertain opportunities. The future is unclear.`,
+      );
+    },
+  });
+}
+
+// ------------------------------------------------------------
+// Main draw
+// ------------------------------------------------------------
+function drawGame() {
+  background(250);
+
+  push();
+  translate(0, -scrollY);
+
+  let y = 80;
+
+  textAlign(LEFT, TOP);
+  fill(30);
+  textSize(20);
+
+  // --- STORY ---
+  for (let block of storyBlocks) {
+    text(block, 80, y, width - 160);
+    y += textSize() * 2.2;
+  }
+
+  y += 30;
+
+  // --- CHOICES ---
+  textSize(18);
+
+  for (let choice of choices) {
+    const meetsReq = meetsRequirements(choice.requirements);
+
+    const btn = {
+      x: width / 2,
+      y: y + 20,
+      w: 420,
+      h: 50,
+    };
+
+    drawChoiceButton(btn, choice.label, meetsReq);
+
+    if (meetsReq && isHover(btn)) {
+      cursor(HAND);
+    }
+
+    if (!meetsReq) {
+      fill(140);
+      textSize(14);
+      text(
+        requirementText(choice.requirements),
+        btn.x - btn.w / 2,
+        btn.y + 35,
+      );
+    }
+
+    y += 90;
+  }
+
+  maxScroll = max(0, y - height + 80);
+
+  pop();
+}
+
+// ------------------------------------------------------------
+// Choice button
+// ------------------------------------------------------------
+function drawChoiceButton({ x, y, w, h }, label, enabled) {
   rectMode(CENTER);
-
-  // Check if the mouse is hovering over the button
-  // isHover() is defined in main.js so it can be shared
-  const hover = isHover({ x, y, w, h });
-
   noStroke();
 
-  // Change button colour when hovered
-  // This gives visual feedback to the player
-  fill(
-    hover
-      ? color(180, 220, 255, 220) // lighter blue on hover
-      : color(200, 220, 255, 190), // normal state
-  );
+  if (!enabled) {
+    fill(220);
+  } else if (isHover({ x, y, w, h })) {
+    fill(255, 210, 170);
+  } else {
+    fill(245);
+  }
 
-  // Draw the button rectangle
-  rect(x, y, w, h, 14); // last value = rounded corners
+  rect(x, y, w, h, 14);
 
-  // Draw the button text
-  fill(0);
-  textSize(28);
+  fill(enabled ? 30 : 150);
   textAlign(CENTER, CENTER);
   text(label, x, y);
 }
 
-// ------------------------------
-// Mouse input for this screen
-// ------------------------------
-// This function is called from main.js
-// only when currentScreen === "game"
+// ------------------------------------------------------------
+// Input
+// ------------------------------------------------------------
 function gameMousePressed() {
-  // Only trigger the outcome if the button is clicked
-  if (isHover(gameBtn)) {
-    triggerRandomOutcome();
+  let y = 80 + storyBlocks.length * 45 + 30;
+
+  for (let choice of choices) {
+    const btn = {
+      x: width / 2,
+      y: y + 20,
+      w: 420,
+      h: 50,
+    };
+
+    if (
+      meetsRequirements(choice.requirements) &&
+      isHover(btn)
+    ) {
+      choice.onSelect();
+      break;
+    }
+
+    y += 90;
   }
 }
 
-// ------------------------------
-// Keyboard input for this screen
-// ------------------------------
-// Allows keyboard-only interaction (accessibility + design)
-function gameKeyPressed() {
-  // ENTER key triggers the same behaviour as clicking the button
-  if (keyCode === ENTER) {
-    triggerRandomOutcome();
-  }
+// ------------------------------------------------------------
+// Scroll
+// ------------------------------------------------------------
+function mouseWheel(event) {
+  scrollY += event.delta;
+  scrollY = constrain(scrollY, 0, maxScroll);
 }
 
-// ------------------------------
-// Game logic: win or lose
-// ------------------------------
-// This function decides what happens next in the game.
-// It does NOT draw anything.
-function triggerRandomOutcome() {
-  // random() returns a value between 0 and 1
-  // Here we use a 50/50 chance:
-  // - less than 0.5 → win
-  // - 0.5 or greater → lose
-  //
-  // You can bias this later, for example:
-  // random() < 0.7 → 70% chance to win
-  if (random() < 0.5) {
-    currentScreen = "win";
-  } else {
-    currentScreen = "lose";
+// ------------------------------------------------------------
+// Helpers
+// ------------------------------------------------------------
+function meetsRequirements(req = {}) {
+  for (let stat in req) {
+    if (player.stats[stat] < req[stat]) return false;
   }
+  return true;
+}
+
+function requirementText(req) {
+  return `Requires: ${Object.entries(req)
+    .map(([s, v]) => `${s} ≥ ${v}`)
+    .join(", ")}`;
 }
