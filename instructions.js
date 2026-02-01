@@ -8,98 +8,159 @@
 // ------------------------------
 // Main draw function for instructions screen
 // ------------------------------
-// drawInstr() is called from main.js
-// only when currentScreen === "instr"
 function drawInstr() {
-  // Light neutral background
-  background(240);
+  background(245, 245, 250);
 
-  // ---- Screen title ----
-  fill(0);
+  fill(40, 60, 80);
   textAlign(CENTER, TOP);
-  textSize(36);
-  text("Instructions", width / 2, 80);
+
+  // ---- Title ----
+  textSize(38);
+  text("How This Life Works", width / 2, 60);
 
   // ---- Instruction text ----
-  textSize(18);
+  textSize(16);
+  textAlign(LEFT, TOP);
 
-  // \n creates a line break in the text
-  // This is useful for simple multi-line instructions
-  const lines =
-    "Press the game button.\n" + "You have a chance to win or lose!";
+  const instructions = `
+This is a life simulation game.
 
-  text(lines, width / 2, 160);
+You will not “win” or “lose” immediately.
+Instead, you will make choices and live with them.
+
+–––––––––––––––––––––––––––
+
+CHARACTER CREATION
+
+• Choose your name
+• Allocate 30 stat points
+• Select a family background
+
+Your family background grants bonus stats.
+Your allocated stats represent your personal strengths.
+
+–––––––––––––––––––––––––––
+
+STATS & CHOICES
+
+Stats affect which choices are available.
+
+Some choices are locked.
+When a choice is locked, the game tells you why:
+(for example: “Requires Intelligence ≥ 6”)
+
+Higher stats unlock more opportunities,
+but no life path is perfect.
+
+–––––––––––––––––––––––––––
+
+THE STORY
+
+The game is told like a web novel.
+
+• Read from top to bottom
+• Scroll to continue
+• Choose how your life unfolds
+
+Your decisions shape:
+• Education
+• Career
+• Relationships
+• Family
+• Lifestyle
+
+–––––––––––––––––––––––––––
+
+ENDINGS
+
+There are many possible endings.
+
+Your ending depends on:
+• Your choices
+• Your stats
+• Your relationships
+• Your resilience
+
+Even an ordinary life still matters.
+
+–––––––––––––––––––––––––––
+
+CONTROLS
+
+• Click buttons to make choices
+• Scroll to read more
+• Press R at the end to live again
+
+Take your time.
+Every life is different.
+`;
+
+  text(
+    instructions,
+    100,
+    130,
+    width - 200
+  );
 
   // ---- Back button ----
-  // This button lets the player return to the start screen
   const backBtn = {
-    x: width / 2, // centred horizontally
-    y: 560,
-    w: 220,
-    h: 70,
-    label: "BACK",
+    x: width / 2,
+    y: height - 80,
+    w: 240,
+    h: 60,
+    label: "BACK TO START",
   };
 
-  // Draw the back button
   drawInstrButton(backBtn);
-
-  // Change cursor when hovering over the button
   cursor(isHover(backBtn) ? HAND : ARROW);
 }
 
 // ------------------------------
-// Mouse input for instructions screen
+// Mouse input
 // ------------------------------
-// Called from main.js only when currentScreen === "instr"
 function instrMousePressed() {
-  // Button data must match the draw position
-  const backBtn = { x: width / 2, y: 560, w: 220, h: 70 };
-
-  // If the button is clicked, return to the start screen
+  const backBtn = { x: width / 2, y: height - 80, w: 240, h: 60 };
   if (isHover(backBtn)) {
     currentScreen = "start";
   }
 }
 
 // ------------------------------
-// Keyboard input for instructions screen
+// Keyboard input
 // ------------------------------
-// Provides keyboard-only navigation
 function instrKeyPressed() {
-  // ESC is a common “go back” key in games and apps
   if (keyCode === ESCAPE) {
     currentScreen = "start";
   }
-
-  // B key is an additional, explicit shortcut for “back”
   if (key === "b" || key === "B") {
     currentScreen = "start";
   }
 }
 
 // ------------------------------
-// Button drawing helper (instructions screen)
+// Button drawing helper
 // ------------------------------
-// This function is only responsible for drawing the button.
-// It is kept separate so the visual style can be changed
-// without touching input or game logic.
 function drawInstrButton({ x, y, w, h, label }) {
   rectMode(CENTER);
-
-  // Check whether the mouse is hovering over the button
   const hover = isHover({ x, y, w, h });
 
   noStroke();
 
-  // Subtle colour change on hover for visual feedback
-  fill(hover ? color(200, 200, 255, 200) : color(220, 220, 255, 170));
+  if (hover) {
+    fill(255, 210, 170);
+    drawingContext.shadowBlur = 14;
+    drawingContext.shadowColor = color(255, 190, 140);
+  } else {
+    fill(235);
+    drawingContext.shadowBlur = 6;
+    drawingContext.shadowColor = color(200, 210, 220);
+  }
 
-  // Draw the button shape
-  rect(x, y, w, h, 12);
+  rect(x, y, w, h, 14);
+  drawingContext.shadowBlur = 0;
 
-  // Draw the button text
-  fill(0);
-  textSize(26);
+  fill(50, 70, 90);
+  textSize(22);
   textAlign(CENTER, CENTER);
   text(label, x, y);
 }
