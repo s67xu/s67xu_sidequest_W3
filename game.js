@@ -457,6 +457,7 @@ function nextPhaseEnd() {
   addStory(ending.text.trim());
   addStory("");
 
+  addStory("");
   addStory("Eventually, your life comes to an end.");
 
   setChoices([
